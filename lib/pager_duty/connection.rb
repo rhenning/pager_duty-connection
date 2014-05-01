@@ -65,16 +65,20 @@ module PagerDuty
 
       OBJECT_KEYS = %w(override entry incident alert service)
 
+      STATUS_WITH_NO_ENTITY_BODY = (100..199).to_a << 204 << 205 << 304
+
       def call(env)
         response = @app.call env
 
-        OBJECT_KEYS.each do |key|
-          object = env[:body][key]
-          parse_object_times(object) if object
-          
-          collection_key = key.pluralize
-          collection = env[:body][collection_key]
-          parse_collection_times(collection) if collection
+        unless STATUS_WITH_NO_ENTITY_BODY.include?(response.status)
+          OBJECT_KEYS.each do |key|
+            object = env[:body][key]
+            parse_object_times(object) if object
+
+            collection_key = key.pluralize
+            collection = env[:body][collection_key]
+            parse_collection_times(collection) if collection
+          end
         end
 
         response
